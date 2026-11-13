@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>New York: Streetball Story</title>
 <meta name="description" content="New York: Streetball Story — нуарный уличный баскетбол: карьера по районам Нью-Йорка, боссы, приёмы, турнир.">
 <meta name="theme-color" content="#16130f">
@@ -540,6 +540,13 @@
   @media (orientation:portrait){#msgs{top:136px} body.big #msgs{top:170px}}      /* the shout-outs clear the score and the quest list */
   body .tabs button span{font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;letter-spacing:-.1px}
   #mSupBig{max-width:92vw;box-sizing:border-box;white-space:normal!important;text-align:center} #mSupBig small{white-space:normal}
+
+  /* notches, rounded corners and Telegram's own buttons: everything the player must reach stays inside the safe area */
+  :root{--sat:env(safe-area-inset-top,0px);--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px);--sab:env(safe-area-inset-bottom,0px)}
+  #hud{margin-top:var(--sat);margin-left:var(--sal);margin-right:var(--sar)}
+  #quests{margin-top:var(--sat);margin-left:var(--sal)} #msgs{margin-top:var(--sat)}
+  .cb{margin-right:var(--sar);margin-bottom:var(--sab)} #joy{margin-left:var(--sal);margin-bottom:var(--sab)}
+  .panel{padding-top:calc(10px + var(--sat));padding-bottom:calc(10px + var(--sab));box-sizing:border-box}
 </style>
 </head>
 <body>
@@ -6530,6 +6537,18 @@ function toggleFs(){try{if(fsOn()){(document.exitFullscreen||document.webkitExit
   else{const r=(fsEl.requestFullscreen||fsEl.webkitRequestFullscreen).call(fsEl);if(r&&r.catch)r.catch(()=>{});}}catch(e){}}
 try{const ua=navigator.userAgent||'',ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),alone=navigator.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||(window.matchMedia&&matchMedia('(display-mode: fullscreen)').matches);
   if(ios&&!alone&&location.protocol==='https:'&&!/claude/.test(location.hostname)&&!/claudeusercontent/.test(location.hostname))$('a2hs').style.display='block';}catch(e){}      // an iPhone browser cannot go full screen on its own: show the one way that works
+// ---- Telegram Mini App: opened from a bot, the game takes the whole screen and keeps clear of Telegram's buttons ----
+try{if(/tgWebApp(Data|Version|Platform)/.test(location.hash||'')){const sc=document.createElement('script');sc.src='https://telegram.org/js/telegram-web-app.js';
+  sc.onload=()=>{try{const tg=window.Telegram&&window.Telegram.WebApp;if(!tg)return;document.body.classList.add('tg');try{$('a2hs').style.display='none';}catch(e){}
+    const px=(a,b)=>((a|0)+(b|0))+'px',ins=()=>{try{const a=tg.safeAreaInset||{},c=tg.contentSafeAreaInset||{},r=document.documentElement.style;
+      r.setProperty('--sat',px(a.top,c.top));r.setProperty('--sab',px(a.bottom,c.bottom));r.setProperty('--sal',px(a.left,c.left));r.setProperty('--sar',px(a.right,c.right));fitW=0;}catch(e){}};
+    try{tg.ready();}catch(e){} try{tg.expand();}catch(e){}
+    try{tg.setHeaderColor('#16130f');tg.setBackgroundColor('#16130f');}catch(e){}
+    try{if(tg.disableVerticalSwipes)tg.disableVerticalSwipes();}catch(e){}       // a swipe on the joystick must not minimise the game
+    try{for(const ev of ['safeAreaChanged','contentSafeAreaChanged','fullscreenChanged','viewportChanged'])tg.onEvent(ev,ins);}catch(e){}
+    try{if(tg.isVersionAtLeast&&tg.isVersionAtLeast('8.0')&&/ios|android/.test(tg.platform||''))tg.requestFullscreen();}catch(e){}
+    ins();setTimeout(ins,600);}catch(e){}};
+  document.head.appendChild(sc);}}catch(e){}
 if(fsCan){$('fsBtn').style.display='';$('fsBtn').onclick=toggleFs;$('bFs').style.display='block';$('bFs').onclick=toggleFs;}
 toMenu(); introBoot();
 requestAnimationFrame(loop);
