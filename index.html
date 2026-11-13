@@ -2332,7 +2332,7 @@ const sfx={
   board(v,p){const k=clamp(v/5,0.2,1);playSample('bounceFar',0.8*k,p,0.35,0.72+Math.random()*0.06);},
   swish(rimIn){playSample('swish',rimIn?0.75:1,RIM,0.18);},
   fence(){}, aww(){}, pass(){},
-  crowd(big){const t=AC?AC.currentTime:0;if(!AC||t<(sfx.crowdT||0))return;sfx.crowdT=t+(big?1.6:1.1);playSample('cheer',big?0.95:0.55,null,0.25,0.97+Math.random()*0.06);},      // the people at the fence react to a basket; one cheer at a time
+  crowd(big){const t=AC?AC.currentTime:0;if(!AC||t<(sfx.crowdT||0))return;sfx.crowdT=t+14;playSample('cheer',big?0.9:0.55,null,0.25,0.97+Math.random()*0.06);},      // rare on purpose: at most one shout in fourteen seconds, so it still means something      // the people at the fence react to a basket; one cheer at a time
 
   whistle(){musicDuck(0.5,0.7);const out=voice(null,1,0.3);osc(2950,0.55,{vol:0.1,vib:28,vibD:70,attack:0.02,out});osc(3150,0.55,{vol:0.07,vib:28,vibD:70,attack:0.02,out});},
   squeak(p){osc(1900,0.07,{to:2700,vol:0.035,type:'triangle',out:voice(p,1,0.15)});},
@@ -3056,7 +3056,7 @@ function showStamp(text,sub,mine){
   el.className='show'+(mine?'':' opp');
   const big=/SLAM|OOP|GLASS|WINDMILL|360|FIRE/.test(text);
   // the crowd only goes off for something special: a show dunk, a poster, a move into a dunk, a bomb from way downtown, a player on fire, a defender put on the floor
-  try{if(S.mode!=='menu'){const t=String(text),sb=String(sub||'');if(/ALLEY|GLASS|WINDMILL|360|DOWNTOWN|FIRE/.test(t)||/POSTER|MOVE/.test(sb)){const g=S.gen;later(0.25,()=>{if(S.gen===g)sfx.crowd(true);});}else if(/ANKLE/.test(t))sfx.crowd(false);}}catch(e){}
+  try{if(S.mode!=='menu'){const t=String(text),sb=String(sub||'');if(/ALLEY|WINDMILL|360/.test(t)||/POSTER/.test(sb)){const g=S.gen;later(0.25,()=>{if(S.gen===g)sfx.crowd(true);});}}}catch(e){}      // only the plays people talk about afterwards: an alley-oop, a trick dunk, a poster
   document.body.classList.remove('shake','quake'); void document.body.offsetWidth; document.body.classList.add(big?'quake':'shake');
   try{if(mine&&navigator.vibrate)navigator.vibrate(big?[60,40,120]:[40,30,70]);}catch(e){}
   if(AC){musicDuck(0.35,1.1);const out=voice(null,1,0.35);osc(64,0.6,{to:33,vol:0.85,out});nz(0.09,{type:'lowpass',f:900,vol:0.6,out});nz(0.35,{type:'highpass',f:4000,vol:0.07,attack:0.01,out});
