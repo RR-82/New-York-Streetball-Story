@@ -593,6 +593,12 @@
   @keyframes carBeat{0%,100%{transform:scale(1);box-shadow:0 5px 16px rgba(240,138,36,.22);filter:brightness(1)}50%{transform:scale(1.028);box-shadow:0 8px 34px rgba(255,205,90,.62);filter:brightness(1.09)}}
   body #menu #bPlay{background:rgba(239,231,218,.07);color:#efe7da;border:1.5px solid rgba(239,231,218,.3);box-shadow:none;font-weight:700}
   body #menu .btn.gold:not(#bCareer){background:rgba(239,231,218,.07);border-color:rgba(239,231,218,.3);color:#efe7da}
+
+  .meCup{display:flex;gap:12px;align-items:center;margin:10px 0 4px;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.12);text-align:left}
+  .meCup.on{border-color:rgba(255,214,90,.7);background:linear-gradient(135deg,rgba(255,214,90,.16),rgba(240,138,36,.06));animation:cupGlow 2.6s ease-in-out infinite}
+  @keyframes cupGlow{50%{box-shadow:0 0 22px rgba(255,205,90,.35)}}
+  .meCup svg{flex:0 0 auto}.meCup b{display:block;font-size:16px;color:#ffd65a}.meCup:not(.on) b{color:#efe7da}
+  .meCup span{display:block;font-size:12.5px;line-height:1.35;opacity:.85;margin-top:2px}.meCup i{font-style:normal;color:#ffd65a;font-weight:800}.meCup small{display:block;font-size:11px;opacity:.55;margin-top:4px}
 </style>
 </head>
 <body>
@@ -618,7 +624,7 @@
   <button class="btn" id="bPlay">▶ Играть</button>
   <button class="btn gold" id="bOnline">🌐 Онлайн 1 на 1</button>
   <button class="btn gold" id="bCareer">🗺 Карьера: стань королём</button>
-  <button class="btn alt" id="bTour" style="display:none">🏆 Король Нью-Йорка</button>
+  <button class="btn alt" id="bTour" style="display:none">🏆 Турнир за кубок</button>
   <button class="btn alt" id="bMe">💪 Мой игрок</button>
   <button class="btn alt" id="bLocker">⚙️ Настройки</button>
   <p class="age"><b>5+</b> Для детей и взрослых · без насилия</p>
@@ -1518,6 +1524,8 @@ function kitMat(base,ncol,accent,num){
   g.textAlign='center'; g.textBaseline='middle'; g.lineJoin='round';
   const put=(x,y,fs)=>{g.font='900 '+fs+'px Rubik,"Arial Black",Arial,sans-serif';g.lineWidth=fs*0.16;g.strokeStyle=hx(accent);g.strokeText(String(num),x,y);g.fillStyle=ncol;g.fillText(String(num),x,y);};
   put(0,118,84); put(W,118,84);        // chest (u=0 wraps round the seam)
+  if(base===GOLD_KIT){const cup=(x,y,k)=>{g.fillStyle=ncol;g.beginPath();g.moveTo(x-11*k,y-12*k);g.lineTo(x+11*k,y-12*k);g.quadraticCurveTo(x+10*k,y+4*k,x,y+6*k);g.quadraticCurveTo(x-10*k,y+4*k,x-11*k,y-12*k);g.fill();g.fillRect(x-2*k,y+5*k,4*k,6*k);g.fillRect(x-8*k,y+10*k,16*k,3.5*k);
+      g.lineWidth=2.4*k;g.strokeStyle=ncol;for(const sx of [-1,1]){g.beginPath();g.arc(x+sx*12*k,y-5*k,5*k,sx>0?-1.4:1.74,sx>0?1.4:4.54);g.stroke();}};cup(0,46,1.25);cup(W,46,1.25);cup(W/2,40,1.5);}      // the cup over the number, front and back
   put(W/2,128,124);                    // back, bigger
   const t=new THREE.CanvasTexture(c); t.anisotropy=renderer.capabilities.getMaxAnisotropy();
   return kitMats[k]=new THREE.MeshLambertMaterial({map:t,side:DSIDE});
@@ -2729,7 +2737,7 @@ function gearBonus(k){let n=0;for(const p of PRIZES)if(p.k===k||p.k==='all')n+=p
 function prizeBy(d){return PRIZES.find(p=>p.d===d);}
 function SK(a,k){return a&&a===user&&!S.online&&PROF.sk?(PROF.sk[k]||0)+gearBonus(k):0;}
 function userWall(){return clamp((DF().wall||0.3)-0.022*SK(user,'hd'),0.2,0.8);}
-function DF(){return S.online?DIFFS.normal:S.intro&&INTRO_DF?INTRO_DF:S.car?carDF():(DIFFS[S.diff]||DIFFS.normal);}
+function DF(){return S.online?DIFFS.normal:S.intro&&INTRO_DF?INTRO_DF:S.car?carDF():S.tourMatch&&S.tourMatch.df?S.tourMatch.df:(DIFFS[S.diff]||DIFFS.normal);}
 function isOpp(a){return a.team!==localTeam();}
 const ROLES={
   all:   {n:'Универсал',e:'All-round',i:'',  sp:1,   sd:1,   h:1,   reach:0,    blk:1,  ank:1},
@@ -3142,6 +3150,37 @@ function cleanTour(o){
 }
 function tourPairs(T,r){const src=r===0?T.t:T.w[r-1],p=[];for(let i=0;i+1<src.length;i+=2)p.push([src[i],src[i+1]]);return p;}
 function tourOpp(T){if(!T||T.out||T.r>2)return null;const pr=tourPairs(T,T.r).find(p=>p.includes(T.me));return pr?(pr[0]===T.me?pr[1]:pr[0]):null;}
+// ---------------- the cup of New York: won in the tournament, worn on a gold jersey, defended against any boss ----------------
+const GOLD_KIT=0xe6b22e;
+function cupGet(){let c=PROF.cup;if(!c||typeof c!=='object')c=PROF.cup={n:0,held:0,def:0};return c;}
+function cupHeld(){return !!cupGet().held;}
+function tourX(r){return r*0.5+cupGet().n*0.5;}                 // every cup won pushes the whole bracket up a full step: what was the final becomes the first round
+function tourDF(r){const x=tourX(r),df=lerpDF(Math.min(1,x)),e=Math.min(4,Math.max(0,x-1));
+  if(e>0){df.aiSpeed=Math.min(1.45,df.aiSpeed*(1+0.06*e));df.aiSd/=1+0.5*e;df.steal*=1+0.45*e;df.block*=1+0.45*e;df.contest=Math.min(0.92,df.contest+0.08*e);df.zone=Math.max(0.42,df.zone/(1+0.22*e));
+    df.ankle/=1+0.4*e;df.userBlock/=1+0.35*e;df.bite/=1+0.4*e;df.aiFake=Math.min(0.6,df.aiFake+0.07*e);df.aiAnkle=Math.min(0.5,df.aiAnkle+0.06*e);df.dunkP=Math.min(1,df.dunkP+0.03*e);df.think/=1+0.3*e;df.meter=Math.max(0.7,df.meter-0.05*e);}
+  return df;}
+function tourDn(r){const x=tourX(r);return x<0.25?'Лёгкий':x<0.75?'Нормальный':x<=1?'Профи':'Легенда ×'+Math.round((x-1)*2+1);}
+function cupWantsDuel(){        // the cup draws challengers: now and then a boss turns up to take it
+  const c=cupGet();if(!c.held||!PROF.tut||S.tourMatch||S.online||S.intro||(S.car&&(S.car.boss||S.car.sup)))return false;
+  S.cupGap=(S.cupGap||0)+1; if(S.cupForce){S.cupForce=false;S.cupGap=0;return true;}
+  if(S.cupGap<4||Math.random()>0.35)return false; S.cupGap=0; return true;}
+function cupDuelStart(){const i=Math.floor(Math.random()*CAR.length),d=CAR[i],loc=S.car?S.car.id:null;
+  S.car={i,m:3,id:d.id,boss:d.boss,df:Object.assign(lerpDF(Math.min(1,0.4+i*0.05+cupGet().n*0.12)),d.boss.df),cold:-99,re:0,duel:true,title:true,loc}; S.fmt=1;}
+function cupSvg(size,on){const g=on?['#ffe58a','#f2b632','#a8700f']:['#8d8779','#5f5a50','#3a362f'],id='cg'+(on?1:0);
+  return '<svg viewBox="0 0 64 64" width="'+size+'" height="'+size+'"><defs><linearGradient id="'+id+'" x1="0" x2="1"><stop offset="0" stop-color="'+g[0]+'"/><stop offset=".55" stop-color="'+g[1]+'"/><stop offset="1" stop-color="'+g[2]+'"/></linearGradient></defs>'
+    +'<path d="M17 12h30v10c0 11-6 19-15 19s-15-8-15-19z" fill="url(#'+id+')" stroke="#141210" stroke-width="2.4" stroke-linejoin="round"/>'
+    +'<path d="M17 16h-7c0 9 4 14 10 15M47 16h7c0 9-4 14-10 15" fill="none" stroke="'+g[1]+'" stroke-width="3.4" stroke-linecap="round"/><path d="M17 16h-7c0 9 4 14 10 15M47 16h7c0 9-4 14-10 15" fill="none" stroke="#141210" stroke-width="1" opacity=".5"/>'
+    +'<rect x="29" y="40" width="6" height="8" fill="'+g[1]+'" stroke="#141210" stroke-width="2"/><path d="M21 48h22l3 8h-28z" fill="url(#'+id+')" stroke="#141210" stroke-width="2.4" stroke-linejoin="round"/>'
+    +'<path d="M23 16v6c0 6 2 11 5 14" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity="'+(on?.55:.15)+'"/>'+(on?'<path d="M32 19l2.3 4.7 5.2.7-3.8 3.6.9 5.1-4.6-2.4-4.6 2.4.9-5.1-3.8-3.6 5.2-.7z" fill="#141210" opacity=".8"/>':'')+'</svg>';}
+let CUP3=null;
+function cupMesh(){            // one small golden trophy; the same model stands on the map and is lifted after the final
+  const g=new THREE.Group(),gold=new THREE.MeshLambertMaterial({color:0xf2b632,emissive:0x5a3c00}),dark=new THREE.MeshLambertMaterial({color:0x2a2018});
+  const P=(a)=>a.map(q=>({x:q[0],y:q[1]}));
+  const bowl=new THREE.Mesh(new THREE.LatheGeometry(P([[0.02,0.2],[0.05,0.22],[0.1,0.28],[0.135,0.37],[0.15,0.48],[0.155,0.52],[0.14,0.52],[0.13,0.4],[0.09,0.3],[0.03,0.25]]),18),gold);g.add(bowl);
+  const stem=new THREE.Mesh(new THREE.LatheGeometry(P([[0.1,0],[0.1,0.03],[0.05,0.06],[0.028,0.1],[0.028,0.17],[0.045,0.2],[0.02,0.21]]),14),gold);g.add(stem);
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(0.115,0.125,0.05,16),dark);base.position.y=-0.025;g.add(base);
+  for(const sx of [-1,1]){const h=new THREE.Mesh(new THREE.TorusGeometry(0.065,0.014,6,14,Math.PI),gold);h.position.set(sx*0.14,0.4,0);h.rotation.z=-sx*Math.PI/2;g.add(h);}
+  g.traverse(o=>{if(o.isMesh)o.castShadow=true;});return g;}
 function tourNew(){
   const others=TEAMS.filter(t=>t.id!==PROF.team).map(t=>t.id); for(let i=others.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[others[i],others[j]]=[others[j],others[i]];}
   const t=[PROF.team].concat(others.slice(0,7)); const slot=Math.floor(Math.random()*8); [t[0],t[slot]]=[t[slot],t[0]];
@@ -3152,12 +3191,12 @@ function tourAdvance(win){
   const play=r=>{T.w[r]=tourPairs(T,r).map(p=>p.includes(T.me)&&!T.out?(win?T.me:(p[0]===T.me?p[1]:p[0])):p[Math.floor(Math.random()*2)]);};
   play(T.r); if(!win)T.out=true; T.r++;
   if(T.out)while(T.r<3){play(T.r);T.r++;}
-  if(win&&T.r===3){PROF.st.kings=(PROF.st.kings||0)+1;giveSticker('king');toast('🗽 '+teamEn(teamBy(T.me)).toUpperCase()+' — KINGS OF NEW YORK!');checkUnlocks();}
+  if(win&&T.r===3){PROF.st.kings=(PROF.st.kings||0)+1;giveSticker('king');const c=cupGet();c.n=Math.min(99,c.n+1);c.held=1;S.cupNew=true;toast('🏆 '+teamEn(teamBy(T.me)).toUpperCase()+' — the CUP is yours!');checkUnlocks();}
   saveProfile();
 }
 function renderTour(){
   let T=PROF.tour; const el=$('tourBody');
-  if(!T){el.innerHTML='<p>Восемь районов, игры на вылет. Выиграй <b>четвертьфинал</b>, <b>полуфинал</b> и <b>финал</b> — и твой район станет королём Нью-Йорка.</p><p style="opacity:.7;font-size:13px">Соперники с каждым кругом сильнее: Лёгкий → Нормальный → Профи. Формат (1×1, 2×2, 3×3) — как выбран в меню.</p>';
+  if(!T){el.innerHTML='<p>Восемь районов, игры на вылет. Выиграй <b>четвертьфинал</b>, <b>полуфинал</b> и <b>финал</b> — и твой район заберёт <b>кубок Нью-Йорка</b>.</p><p style="opacity:.7;font-size:13px">Турнир №'+(cupGet().n+1)+': '+tourDn(0)+' → '+tourDn(1)+' → '+tourDn(2)+'. Каждый выигранный кубок делает следующий турнир намного труднее. Формат (1×1, 2×2, 3×3) — как выбран в меню.</p>'+(cupGet().n?'<p style="font-size:13px;color:#ffd65a">🏆 Кубков: '+cupGet().n+(cupHeld()?' · кубок у тебя, защит: '+cupGet().def:' · кубок потерян — верни его!')+'</p>':'');
     $('tourPlay').textContent='🏆 Начать турнир за '+teamBy(PROF.team).n; $('tourPlay').style.display='block'; $('tourNew').style.display='none'; return;}
   const cell=(id,won,lost)=>'<div class="tm'+(id===T.me?' me':'')+(won?' won':'')+(lost?' lost':'')+'"'+(id?' style="border-left-color:'+hexCss(teamBy(id).c)+'"':'')+'>'+(id?esc(teamBy(id).s||teamBy(id).n):'—')+'</div>';
   let h='<div class="brk">';
@@ -3167,10 +3206,10 @@ function renderTour(){
       h+='<div class="pair'+(p.includes(T.me)&&!T.out&&r===T.r?' now':'')+'">'+cell(p[0],w&&w===p[0],w&&w!==p[0])+cell(p[1],w&&w===p[1],w&&w!==p[1])+'</div>';}
     h+='</div>';}
   const ch=T.w[2][0]||null;
-  h+='</div><div class="champ'+(ch===T.me?' me':'')+'">👑 '+(ch?esc(teamBy(ch).n)+' — король Нью-Йорка!':'Король Нью-Йорка: ?')+'</div>';
+  h+='</div><div class="champ'+(ch===T.me?' me':'')+'">🏆 '+(ch?esc(teamBy(ch).n)+' — кубок Нью-Йорка!':'Кубок Нью-Йорка: ?')+'</div>';
   el.innerHTML=h;
   const opp=tourOpp(T);
-  if(opp){$('tourPlay').textContent='▶ '+TOUR_R[T.r].n+': '+(teamBy(T.me).s||teamBy(T.me).n)+' vs '+(teamBy(opp).s||teamBy(opp).n)+' · '+TOUR_R[T.r].dn;$('tourPlay').style.display='block';}
+  if(opp){$('tourPlay').textContent='▶ '+TOUR_R[T.r].n+': '+(teamBy(T.me).s||teamBy(T.me).n)+' vs '+(teamBy(opp).s||teamBy(opp).n)+' · '+tourDn(T.r);$('tourPlay').style.display='block';}
   else $('tourPlay').style.display='none';
   $('tourNew').style.display='block'; $('tourNew').textContent=T.out||T.r>2?'🔁 Новый турнир':'Начать турнир заново';
 }
@@ -3178,7 +3217,7 @@ function openTour(){S.locker=false;$('menu').classList.remove('show');$('locker'
 function tourPlay(){
   audioInit(); if(!PROF.tour){tourNew();renderTour();return;}
   const T=PROF.tour, opp=tourOpp(T); if(!opp)return;
-  S.tourMatch={opp,diff:TOUR_R[T.r].d,r:T.r}; $('tour').classList.remove('show'); startGame();
+  S.tourMatch={opp,diff:TOUR_R[T.r].d,r:T.r,df:tourDF(T.r)}; $('tour').classList.remove('show'); startGame();
 }
 // ---------------- career: eight districts, three games and a boss in each ----------------
 // A boss is not just a stronger bot: he has one trick that beats ordinary play and one weakness that beats him.
@@ -3271,6 +3310,7 @@ function carSetup(){            // called from startGame once the teams are buil
 function carIntro(){const C=S.car,d=CAR[C.i];
   if(C.gold&&!C.sup){later(0.5,()=>stamp('GOLD BOSS: '+C.boss.n,'GOLDEN SUMMER · TRIPLE XP',1));later(2.4,()=>say('"I have been waiting for this."','small bad'));return;}
   if(C.sup){later(0.5,()=>stamp((C.gold?'GOLD ':'SUPER ')+'BOSS: '+SUPER.n,'NEW JERSEY · ONE ON ONE',1));later(2.4,()=>say('"'+SUPER.taunt+'"','small bad'));return;}
+  if(C.title){later(0.5,()=>stamp(C.boss.n+' WANTS YOUR CUP','TITLE DEFENCE · FIRST TO 5',1));later(2.4,()=>say('"That trophy looks better in my district."','small bad'));return;}
   if(C.duel){later(0.5,()=>stamp(C.boss.n+' WANTS A WORD','ONE ON ONE · FIRST TO 5',1));later(2.4,()=>say('"'+C.boss.taunt+'"','small bad'));return;}
   if(C.boss&&C.gap)later(3.6,()=>say('He is out of your league — reach LVL '+BOSS_LVL[C.i]+' first','small bad'));
   if(C.boss){later(0.5,()=>stamp('BOSS: '+C.boss.n,C.re?'REMATCH · DOUBLE XP':mapName(C.i,3).toUpperCase(),1));if(C.re)later(2.2,()=>say('"'+C.boss.taunt+'"','small bad'));}
@@ -3282,6 +3322,7 @@ function carEnd(win,my,their){
   if(C.sup){C.stars=0;C.newStars=0;C.got=null;if(win){C.supWin=!P.sup;P.sup=1;giveSticker('legend');if(C.supWin){P.ng=1;P.gd=P.gd||{};}if(C.gold){P.gd=P.gd||{};C.goldWin=!P.gd.sup;P.gd.sup=1;giveSticker('immortal');}}return 0;}
   if(win&&C.gold&&C.boss){P.gd=P.gd||{};P.gd[d.id]=1;}
   const N=PROF.nem;
+  if(C.title){const c=cupGet();if(win)c.def=Math.min(999,c.def+1);else c.held=0;C.stars=0;C.newStars=0;C.got=null;return 0;}      // the cup is all that is at stake
   if(win&&C.boss&&N&&N.id===d.id){C.revenge=N.l;PROF.nem=null;P.tro[d.id]=1;}                       // the feud is over: his cap is yours
   if(!win&&C.boss){PROF.nem={id:d.id,l:Math.min(99,(N&&N.id===d.id?N.l:0)+1)};}                     // one nemesis at a time: the last boss who beat you
   if(C.duel){C.stars=0;C.newStars=0;C.got=null;return 0;}
@@ -3325,6 +3366,7 @@ function renderMe(){
       +'<small>'+(v?'сейчас: '+f(v):'пока не прокачан')+(gb?' <em class="gb">(+'+gb+' от призов)</em>':'')+(v0<10?'<br><span>следующий шаг: '+f(v+1)+'</span>':'<br><span>максимум очков!</span>')+'</small></div>';}
   // prizes: one piece of gear from every boss; achievements; how strong the player is overall
   {const got=PRIZES.filter(p=>prizeLvl(p)>0).length,SKN={sh:'Бросок',hd:'Дриблинг',df:'Защита',sp:'Скорость',dk:'Данк',all:'все навыки'},bn=d=>d==='sup'?SUPER.ru:(CAR.find(c=>c.id===d)||{boss:{ru:''}}).boss.ru;
+    {const c=cupGet(),on=!!c.held;h+='<div class="meCup'+(on?' on':'')+'">'+cupSvg(64,on)+'<div><b>Кубок Нью-Йорка'+(c.n>1?' ×'+c.n:'')+'</b><span>'+(on?'Кубок у тебя — ты играешь в <i>золотой майке</i>. Защит титула: '+c.def+'. Любой босс может прийти за ним: проиграешь — кубок уйдёт.':c.n?'Кубок потерян. Выиграй турнир — и он вернётся в твой район.':'Выиграй турнир районов: три матча на вылет. Кубок встанет в твоём районе на карте, а ты выйдешь в золотой майке.')+'</span><small>Следующий турнир: '+tourDn(0)+' → '+tourDn(1)+' → '+tourDn(2)+'</small></div></div>';}
     h+='<div class="meSec"><b>🎁 Призы боссов · '+got+' / '+PRIZES.length+'</b><small>победи босса — заберёшь его вещь навсегда. В Золотое лето приз становится золотым и даёт вдвое больше.</small><div class="meGrid">'
       +PRIZES.map(p=>{const l=prizeLvl(p);return '<div class="mePz'+(l?' on':'')+(l>1?' gold':'')+(p.top?' top':'')+'">'+prizeSvg(p.d,l,p.top?84:58)+(p.top?'<em>ГЛАВНЫЙ ПРИЗ ИГРЫ</em>':'')+'<b>'+esc(p.n)+'</b><span>'+(l?'+'+prizeVal(p,l)+' '+(p.k==='all'?'ко всем пяти навыкам':SKN[p.k])+(p.top&&l<2?' · золотой даст +3':''):'босс: '+esc(bn(p.d))+' · +'+prizeVal(p,1)+' '+(p.k==='all'?'ко всем пяти навыкам':SKN[p.k]))+'</span></div>';}).join('')+'</div></div>';
     const sg=STICKERS.filter(x=>PROF.stk[x.id]).length;
@@ -3459,11 +3501,13 @@ function paperRec(win){
   const nm=(PROF.name||'THE ROOKIE').toUpperCase(), home=teamEn(teamBy(PROF.team)).toUpperCase(), opp=(S.opp?teamEn(S.opp):'THE VISITORS').toUpperCase(), loc0=teamEn(teamBy(locId||PROF.team)).toUpperCase(), loc=loc0==='BRONX'?'THE BRONX':loc0;
   const sc=me+'–'+th, pick=a=>a[Math.floor(Math.random()*a.length)]; let hd,sub,art;
   if(S.intro){hd='A NEW KID ON THE BLOCK';sub=PROF.name?nm+' announces himself to New York':'Nobody knows his name yet. They will.';art='A stranger walked onto a '+loc+' court last night and left it buzzing. Regulars say they have not seen a first night like it in years.';}
+  else if(C&&C.title){if(win){hd='THE CUP STAYS IN '+(home==='BRONX'?'THE BRONX':home);sub=C.boss.n+' came for the trophy and left empty-handed, '+sc;art='He walked in talking about silverware. '+nm+' sent him home without it. The cup has now been defended '+cupGet().def+' time'+(cupGet().def===1?'':'s')+'.';}
+    else{hd=C.boss.n+' TAKES THE CUP';sub='The champions fall '+th+'–'+me+' and the trophy leaves '+(home==='BRONX'?'the Bronx':home);art='One bad night and it is gone. The shelf is empty and the gold jerseys are back in the bag. There is only one way to get it back: win the tournament again.';}}
   else if(win&&C&&C.revenge){hd='REVENGE! '+C.boss.n+' FINALLY FALLS';sub=nm+' settles the score after '+C.revenge+' defeat'+(C.revenge>1?'s':'');art='He lost, he came back, and last night he finished it. '+C.boss.n+' left the court without a word — and without his cap.';}
   else if(win&&C&&C.boss&&C.id==='manhattan'&&C.got){hd='A NEW KING OF NEW YORK';sub=nm+' takes the crown from THE KING, '+sc;art='Eight districts, eight bosses, one crown. The city has a new ruler and every playground from the Bronx to Coney Island knows the name.';}
   else if(win&&C&&C.boss){hd=C.boss.n+' FALLS IN '+loc+'!';sub=nm+' wins '+sc+(C.got?' and walks away with the '+C.got.en:'');art='The boss of '+loc+' met his match last night. "'+C.boss.taunt+'" he used to say. Nobody is laughing now.';}
   else if(!win&&C&&C.boss){hd=C.boss.n+' STILL RUNS '+loc;sub='"'+C.boss.taunt+'" — challenger beaten '+th+'–'+me;art=nm+' came for the boss and came up short. Word on the street is he will be back, and next time he will know the trick.';}
-  else if(win&&S.tourMatch&&PROF.tour&&PROF.tour.r>2){hd='KINGS OF NEW YORK!';sub=home+' win the big tournament';art='Three games, three wins. The trophy goes to '+home+' and the block party is still going.';}
+  else if(win&&S.tourMatch&&PROF.tour&&PROF.tour.r>2){const cn=cupGet().n;hd='CHAMPIONS OF NEW YORK!';sub=home+' lift the cup'+(cn>1?' for the '+(cn===2?'second':cn===3?'third':cn+'th')+' time':'');art='Three games, three wins. '+nm+' held the trophy over his head while the whole block sang. From today '+home+' play in gold — and every boss in town wants that cup.';}
   else if(win&&th===0){hd='PERFECT GAME! '+sc;sub=opp+' never scored a single point';art='Not one basket. '+nm+' and '+home+' shut the door and threw away the key.';}
   else if(win&&me-th>=7){hd='NO MERCY IN '+loc+': '+sc;sub=home+' run '+opp+' off the court';art='It was over early. '+nm+' did as he pleased and the crowd loved every minute.';}
   else if(win&&k.dnk>=4){hd=nm+' RAINS DUNKS ON '+opp;sub=k.dnk+' slams in a '+sc+' win';art='The rim is still shaking. '+k.dnk+' times he went up and '+k.dnk+' times he threw it down.';}
@@ -4172,6 +4216,7 @@ function mapBuild(){
   // one big padlock over every district that is still closed
   MAP.locks={};for(const d of CAR){const D=MAP_D[d.id],sp=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthTest:false}));let cx=0,cz=0;for(const c of D.c){cx+=c[0]/4;cz+=c[1]/4;}sp.position.set(cx,3.2,cz);sp.renderOrder=6;sc.add(sp);MAP.locks[d.id]=sp;}
   MAP.dark=new THREE.MeshBasicMaterial({color:0x4a443a});MAP.lit=M(0xffffff);MAP.grow={};
+  try{const g=cupMesh();g.scale.setScalar(5.2);g.visible=false;sc.add(g);MAP.cup=g;}catch(e){}
   {const g=new THREE.Group();cyl(0.2,0.26,0.9,INK,0,0.55,0,g,8);const h=new THREE.Mesh(new THREE.SphereGeometry(0.2,8,6),INK);h.position.y=1.15;g.add(h);box(0.36,0.1,0.3,RUST,0,1.32,0,0,g);g.visible=false;sc.add(g);MAP.nem=g;}
   MAP.cOn=cOn;MAP.cOff=cOff;MAP.dm=dm;MAP.ray=new THREE.Raycaster();MAP.labCache={};
 }
@@ -4193,6 +4238,7 @@ function mapRefresh(){
     else if(st){tex=MAP.labCache['S'+st+boss]||(MAP.labCache['S'+st+boss]=mapStarTex(st,boss));}
     else {const nm=mapName(n.i,n.m).toUpperCase(),txt=boss?'💀 BOSS':isCur?'PLAY ▸':'PLAY',bg=boss?'rgba(143,34,25,.95)':isCur?'#f0b942':'rgba(22,19,16,.9)',fg=boss?'#fff3d6':isCur?'#141210':'#efe7da';tex=mapLabel(nm+txt+bg,nm,txt,bg,fg);}
     n.tag=ok;n.small=ok&&st>0;n.lab.material.map=tex;n.lab.material.needsUpdate=true;}
+  if(MAP.cup){const D=MAP_D[PROF.team];MAP.cup.visible=cupHeld()&&!!D;if(D){let cx=0,cz=0;for(const c of D.c){cx+=c[0]/4;cz+=c[1]/4;}MAP.cup.position.set(cx,0.3,cz);}}
   {const N=PROF.nem,i=N?CAR.findIndex(c=>c.id===N.id):-1;MAP.nem.visible=i>=0&&!!o[N.id];if(i>=0){const c=MAP_D[N.id].c[3];MAP.nem.position.set(c[0]+2.4,0,c[1]+1.6);}}
   {const ci=cur.i*4+cur.m;MAP.thread.forEach((t,q)=>{t.visible=q<ci&&q>=ci-4;});}                    // the thread runs through every court already won, up to the one you are on
   let fresh=null;if(MAP.lastOpen){for(const k in open)if(!MAP.lastOpen[k])fresh=k;}MAP.lastOpen=open;return {cur,fresh,freshD};
@@ -4302,6 +4348,7 @@ function mapFrame(dt,T){
     S2.g.position.set(x,0.02+Math.sin(MAP.t*1.4+S2.L)*0.025,z);S2.g.rotation.set(Math.sin(MAP.t*1.1+S2.L)*0.03,S2.hd,0);
     const bx=Math.cos(-S2.hd),bz=Math.sin(-S2.hd);S2.smoke.forEach((sp,q)=>{const p=(MAP.t*0.22+q/S2.smoke.length)%1;sp.position.set(x-bx*(0.3+p*3.2)*S2.k,(1.15+p*2.4)*S2.k,z-bz*(0.3+p*3.2)*S2.k+Math.sin(MAP.t+q)*0.2*p);const sz=(0.5+p*1.9)*S2.k;sp.scale.set(sz,sz,1);sp.material.opacity=Math.sin(Math.PI*Math.min(1,p*1.2))*0.5*(1-p*0.5);});}
   if(MAP.lm.wheel)MAP.lm.wheel.rotation.z=MAP.t*0.35;
+  if(MAP.cup&&MAP.cup.visible){MAP.cup.rotation.y=MAP.t*0.9;MAP.cup.position.y=0.5+0.25*Math.sin(MAP.t*2);}
   for(const n of MAP.nodes){if(!n.g.visible)continue;const sel=MAP.sel===n;
     n.pin.position.y=n.cur?0.35+Math.abs(Math.sin(MAP.t*3))*0.9:sel?0.5:0;
     if(n.m===3&&goldPending(n.i)){n.ring.visible=true;if(n.pinM&&n.pinM.emissive)n.pinM.emissive.setHex(Math.sin(MAP.t*5)>0?0x8a6200:0x3a2600);}
@@ -4319,11 +4366,13 @@ function mapFrame(dt,T){
 }
 const STAT_KEYS=['rate','onW','onL','games','wins','losses','streak','best','dunk','ankle','glass','oop','block','combo','proWins','ft','long','kings','quests'];
 function cleanName(t){return String(t||'').replace(/[<>&"'`\\]/g,'').replace(/\s+/g,' ').trim().slice(0,12);}
-function freshProfile(){const st={};STAT_KEYS.forEach(k=>st[k]=0);return {v:1,xp:0,sk:cleanSk(null),car:carFresh(),news:[],nem:null,intro:0,team:'bronx',name:'',fx:'noir',skin:'t4',face:'f0',hair:'none',acc:'none',num:7,cap:'red',chain:'thin',shoes:'white',badge:'',night:false,st,stk:{},vs:{},seen:{}};}
+function freshProfile(){const st={};STAT_KEYS.forEach(k=>st[k]=0);return {v:1,xp:0,sk:cleanSk(null),car:carFresh(),news:[],nem:null,intro:0,team:'bronx',name:'',fx:'noir',skin:'t4',face:'f0',hair:'none',acc:'none',num:7,cap:'red',chain:'thin',shoes:'white',badge:'',night:false,st,stk:{},vs:{},seen:{},cup:{n:0,held:0,def:0}};}
 function loadProfile(){let o=null;try{o=JSON.parse(localStorage.getItem('sbProfile')||'null');}catch(e){}return parseProfile(o);}
 function parseProfile(o){
   const P=freshProfile();
   try{if(o&&typeof o==='object'){
+    {const c=o.cup;if(c&&typeof c==='object')P.cup={n:clamp(Math.floor(+c.n)||0,0,99),held:c.held?1:0,def:clamp(Math.floor(+c.def)||0,0,999)};
+      else if(o.st&&+o.st.kings>0)P.cup={n:clamp(Math.floor(+o.st.kings),1,99),held:1,def:0};}      // champions from before the cup existed keep their title
     P.ts=+o.ts||0; if(o.tut)P.tut=1; if(o.replay===false)P.replay=false; P.tour=cleanTour(o.tour); P.car=cleanCar(o.car); P.news=cleanNews(o.news); P.sk=cleanSk(o.sk); P.intro=+o.intro===2?2:+o.intro===3?3:o.intro?1:0;
   {const n=o.nem;P.nem=n&&typeof n==='object'&&CAR.some(c=>c.id===n.id)?{id:n.id,l:clamp(Math.floor(+n.l)||1,1,99)}:null;} {const x=Math.floor(+o.xp);if(x>0&&isFinite(x))P.xp=Math.min(x,4e6);}
     if(typeof o.name==='string')P.name=cleanName(o.name); if(TEAMS.some(t=>t.id===o.team))P.team=o.team;
@@ -4408,7 +4457,7 @@ function cloudPush(){
 function unlocked(item){return !item.need||PROF.st[item.need[0]]>=item.need[1];}
 function myRate(){return PROF.st.rate||1000;}
 function rateTitle(r){return r>=1300?'ЛЕГЕНДА':r>=1150?'ПРОФИ':r>=1000?'УЛИЧНЫЙ БОЕЦ':'НОВИЧОК';}
-function myLook(){return {r:myRate(),f:+String(PROF.face||'f0').slice(1)||0,tn:PROF.skin,n:PROF.name,c:PROF.cap,ch:PROF.chain,sh:PROF.shoes,b:PROF.badge,sk:skillLvl(),h:PROF.hair,ac:PROF.acc,nm:PROF.num};}
+function myLook(){return {cp:cupHeld()?1:0,r:myRate(),f:+String(PROF.face||'f0').slice(1)||0,tn:PROF.skin,n:PROF.name,c:PROF.cap,ch:PROF.chain,sh:PROF.shoes,b:PROF.badge,sk:skillLvl(),h:PROF.hair,ac:PROF.acc,nm:PROF.num};}
 function cleanLook(o){
   const L={n:'',c:'',ch:'thin',sh:'ink',b:''}; if(!o||typeof o!=='object')return L;
   L.n=cleanName(o.n); for(const [k,t] of [['c','cap'],['ch','chain'],['sh','shoes'],['h','hair'],['ac','acc'],['tn','skin']])if(LOOKS[t].some(x=>x.id===o[k]))L[k]=o[k];
@@ -4424,7 +4473,8 @@ function applyLook(a,lk){
   {const tn=lk.tn&&LOOKS.skin.find(x=>x.id===lk.tn);if(tn)m.body.color.setHex(tn.c);}
   if(lk.f!==undefined&&lk.f!==null)m.faceV=clamp(lk.f|0,0,FACE_N-1);
   styleHead(m,lk.h||'none',lk.ac||'none',lk.c!=='nocap',0xc0392b);
-  jersey(m,a.team===0?0xf2ede4:0x1b1a18,(lk.nm===0||lk.nm)?lk.nm:7,a.team===0?'#141210':'#f2ede4',a.team===0?(a===user&&!S.online&&proTeam()?proTeam().c:teamBy(PROF.team).c):(!S.online&&S.opp?S.opp.c:RUST));
+  if(lk.cp)jersey(m,GOLD_KIT,(lk.nm===0||lk.nm)?lk.nm:7,'#141210',0x141210);      // the champion's gold
+  else jersey(m,a.team===0?0xf2ede4:0x1b1a18,(lk.nm===0||lk.nm)?lk.nm:7,a.team===0?'#141210':'#f2ede4',a.team===0?(a===user&&!S.online&&proTeam()?proTeam().c:teamBy(PROF.team).c):(!S.online&&S.opp?S.opp.c:RUST));
   const cm=lk.c&&lookMat('cap',lk.c); m.cap.material=cm||m.body; m.brim.material=cm||m.body;
   buildShoes(m,lk.sh||'ink');
   buildChain(m,lk.ch||'thin'); m.sw=null;
@@ -5184,8 +5234,10 @@ function startCelebration(){
   const win=S.score[0]>=S.target?0:1;
   const winners=actors.filter(a=>a.team===win), losers=actors.filter(a=>a.team!==win);
   S.celebrate={team:win,t:0,winners,losers,photo:(S.online?0:3.0),flash:false,seed:Math.floor(Math.random()*6)};
+  S.celebrate.cup=!S.online&&win===0&&!!S.tourMatch&&S.tourMatch.r===2;
+  if(S.celebrate.cup){S.celebrate.photo=4.4;try{if(!CUP3){CUP3=cupMesh();scene.add(CUP3);}CUP3.visible=true;CUP3.scale.setScalar(1.25);}catch(e){}try{confetti.material.size=0.15;}catch(e){}}
   if(S.celebrate.photo){const wn=win===0?teamEn(teamBy(S.tourMatch&&PROF.tour?PROF.tour.me:PROF.team)):(S.opp?teamEn(S.opp):'Opponents'), mv=mvpOf(winners);
-    $('frameCap').innerHTML=esc(wn.toUpperCase())+' — WINNERS · '+S.score[win]+':'+S.score[1-win]+'<small>⭐ '+esc(mvpLine(mv))+'</small>';document.body.classList.add('photo');}
+    $('frameCap').innerHTML=(S.celebrate.cup?'🏆 '+esc(wn.toUpperCase())+' — CHAMPIONS OF NEW YORK':esc(wn.toUpperCase())+' — WINNERS · '+S.score[win]+':'+S.score[1-win])+'<small>⭐ '+esc(mvpLine(mv))+'</small>';document.body.classList.add('photo');}
   cam=persp; rack.visible=false; groundLine.visible=false; cityNear.visible=true; fenceNear.visible=true; S.tw=null;
   clearExtraBalls(); const b=S.ball; b.state='loose'; b.holder=null; b.pos.set(1.5,BALL_R,6.6); b.vel.set(0,0,0); b.mesh.visible=true; b.mesh.position.copy(b.pos);
   boombox.visible=true; boombox.position.set(0,0,4.6); boombox.rotation.y=0; party.visible=true;
@@ -5196,7 +5248,7 @@ function startCelebration(){
   try{const mine=win===localTeam(),k=mine?'win':'lose';if(songOk(k))setTrack(k);}catch(e){}
   startBeat(0.85); ambLevel(0.25); airHorn(); {const gen=S.gen;setTimeout(()=>{if(S.gen===gen&&S.celebrate)voiceTeam(win,'win');},1600);}
 }
-function stopCelebration(){document.body.classList.remove('photo');S.celebrate=null;boombox.visible=false;party.visible=false;confetti.visible=false;for(const a of actors){a.flip=0;}stopBeat();}
+function stopCelebration(){try{if(CUP3)CUP3.visible=false;confetti.material.size=0.09;}catch(e){}document.body.classList.remove('photo');S.celebrate=null;boombox.visible=false;party.visible=false;confetti.visible=false;for(const a of actors){a.flip=0;}stopBeat();}
 function groove(p,bp,amt,ph){      // the hip-hop bounce under every move: knees dip on the beat, the head nods, the weight shifts from foot to foot
   const c=0.5-0.5*Math.cos(2*Math.PI*bp+(ph||0)), s=Math.sin(Math.PI*bp+(ph||0));
   return Object.assign({},p,{py:(p.py||0)-0.06*amt*c,kL:(p.kL||0)+0.34*amt*c+0.1*amt*Math.max(0,s),kR:(p.kR||0)+0.34*amt*c+0.1*amt*Math.max(0,-s),hL:(p.hL||0)+0.17*amt*c,hR:(p.hR||0)+0.17*amt*c,
@@ -5220,14 +5272,17 @@ function dancePose(mv,bp,h,a,dt){
 }
 function updateCelebrate(dt,T){
   const C=S.celebrate; C.t+=dt; const bp=beatPos(), h=beatHit();
+  if(C.cup&&user&&CUP3&&!C.cupDown){try{const up=Math.min(1,C.t/0.9),e=up*up*(3-2*up);CUP3.position.set(user.pos.x,(1.25+1.32*e)*(user.man.root.scale.y||1)+(user.lift||0)+0.05*Math.sin(T*5),user.pos.z+0.12);CUP3.rotation.y=T*1.4;
+    if(C.t>0.9&&!C.cupHorn){C.cupHorn=1;try{sfx.crowdT=0;sfx.crowd(true);}catch(e){}}}catch(e){}}
   if(C.photo&&C.t<C.photo){   // team photo: line up, hold a pose, flash — then the party starts
     const n=C.winners.length;
     C.winners.forEach((a,i)=>{a.heading=angLerp(a.heading,0,1-Math.exp(-dt*8));a.lift=0;a.flip=0;if(a.home)a.pos.lerp(a.home,1-Math.exp(-dt*6));const still=C.t>0.6&&C.t<1.3,ph=PH[(i+(C.seed||0))%PH.length];a.tgt=C.t<=0.6?groove(dancePose('bounce',bp,h,null,dt),bp,1,i*0.9):still?ph:groove(ph,bp,0.8,i*0.9);a.rate=still?14:16;
       if(!still)a.heading+=0.12*Math.sin(Math.PI*bp/2+i)*dt*4;});
     C.losers.forEach((a,i)=>{const w=Math.sin(T*0.9+i*1.7);a.tgt=Object.assign({},SAD_SIT,{neck:(SAD_SIT.neck||0)+0.12*w});a.rate=6;});
+    if(C.cup&&user){const w=0.08*Math.sin(T*5);user.tgt=Object.assign({},user.tgt,{aL:2.82+w,aR:2.82-w,eL:0.28,eR:0.28,sL:-0.06,sR:-0.06,neck:-0.2,lean:-0.05});user.rate=16;}
     for(const a of actors)syncActor(a,dt);
-    if(!C.flash&&C.t>0.8)snapAsk(1);
-    if(!C.flash&&C.t>0.95){C.flash=true;const f=$('flash');f.className='';void f.offsetWidth;f.className='go';
+    if(!C.flash&&C.t>(C.cup?2.0:0.8))snapAsk(1);
+    if(!C.flash&&C.t>(C.cup?2.15:0.95)){C.flash=true;const f=$('flash');f.className='';void f.offsetWidth;f.className='go';
       if(AC){const o=voice(null,1,0.1);nz(0.03,{type:'highpass',f:3000,vol:0.5,out:o});nz(0.05,{type:'bandpass',f:1200,q:2,vol:0.4,out:o,delay:0.07});}}
     persp.fov=baseFov()<60?38:46; persp.near=0.1; persp.far=600; cam=persp;
     persp.position.set(0.25,1.5,6.0+3.6+n*0.75); camLook.set(0,1.18,6.0); persp.lookAt(camLook); persp.updateProjectionMatrix(); camDist=5;
@@ -5245,6 +5300,8 @@ function updateCelebrate(dt,T){
     a.tgt=groove(dancePose(mv,bp,h,a,dt),bp,mv==='twostep'||mv==='rock'||mv==='plane'||mv==='pump'?0.45:1,i*0.9); a.rate=18;
   });
   C.losers.forEach((a,i)=>{const w=Math.sin(T*0.9+i*1.7);a.tgt=Object.assign({},SAD_SIT,{neck:(SAD_SIT.neck||0)+0.12*w,lean:(SAD_SIT.lean||0)+0.03*Math.sin(T*1.6+i)});a.rate=6;});      // the losers breathe and shake their heads
+  if(C.cup&&user){const pt=C.t-(C.photo||0);if(pt<7){const w=0.1*Math.sin(T*5);user.tgt=Object.assign({},user.tgt,{aL:2.82+w,aR:2.82-w,eL:0.28+0.3*h,eR:0.28+0.3*h,sL:-0.06,sR:-0.06});}
+    else if(CUP3){CUP3.position.set(0.95,0.05,4.6);CUP3.rotation.y=T*0.5;C.cupDown=1;}}
   for(const a of actors)syncActor(a,dt);
   const pulse=1+0.12*h; boombox.speakers.forEach(sp=>sp.scale.set(pulse,1,pulse)); boombox.scale.setScalar(1+0.03*h);
   updateConfetti(dt,T);
@@ -5995,6 +6052,7 @@ function endGame(){
     {const g=S.xpGain,nk=nickOf();if(g&&nk)$('oMvp').textContent+='  ·  "'+nk+'"';overXp(g);try{overPrize();}catch(e){}}
     if(S.car&&!S.online){const C=S.car;$('oAgain').textContent='🗺 Career';
       if(C.sup)$('oSub').textContent=win?'The COLOSSUS falls. The Big League is calling! 🗿':'"'+SUPER.taunt+'"  ·  Try again!'; else
+      if(C.title)$('oSub').textContent=win?'🏆 TITLE DEFENDED! The cup stays in '+teamEn(teamBy(PROF.team))+'.':'The cup is gone. Win the tournament to bring it home.'; else
       if(C.duel)$('oSub').textContent=win?'REVENGE! He will not bother you again.':'"'+C.boss.taunt+'"  ·  He leads '+(PROF.nem?PROF.nem.l:1)+':0'; else
       $('oSub').textContent=win?('★'.repeat(C.stars)+'☆'.repeat(3-C.stars)+(C.got?'  ·  New move: '+C.got.e+' '+C.got.en+'!':C.stars<3?'  ·  Win by '+(C.stars<2?4:7)+'+ for '+(C.stars+1)+' stars':'  ·  Perfect!')):(C.boss?'"'+C.boss.taunt+'"  ·  Rematch for double XP!':'Try again!');
       if(C.got)later(0.6,()=>stamp(C.got.en,'NEW SIGNATURE MOVE',0));
@@ -6020,7 +6078,7 @@ function buildTeams(n){
 }
 function readMenuChoice(){const f=document.querySelector('#segFmt .sel'),d=document.querySelector('#segDiff .sel');if(f&&!S.car)S.fmt=+f.dataset.v||S.fmt;if(d&&!S.tourMatch)S.diff=d.dataset.v;S.target=11;}
 function startGame(){
-  S.online=false; S.intro=null; readMenuChoice(); if(nemWantsDuel())nemDuelStart(); if(S.car&&S.car.duel)S.target=5;
+  S.online=false; S.intro=null; readMenuChoice(); if(nemWantsDuel())nemDuelStart(); else if(cupWantsDuel())cupDuelStart(); if(S.car&&S.car.duel)S.target=5;
   resetCommon(); S.practice=false; S.recorded=false; S.score=[0,0]; S.time=0;
   if(S.car){const T=teamBy(S.car.id);S.opp=S.car.boss?Object.assign({},T,{e:S.car.boss.n,es:S.car.boss.n}):T;{const lc=S.car.duel?(S.car.loc||PROF.team):S.car.id;if(locId!==lc)setLocation(lc);}}
   else if(S.tourMatch){S.opp=teamBy(S.tourMatch.opp);S.diff=S.tourMatch.diff;}else pickOpp();
