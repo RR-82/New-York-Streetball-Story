@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rubik+Wet+Paint&family=Rubik:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
-  html,body{margin:0;height:100%;overflow:hidden;background:#efe7da;touch-action:none;
+  html,body{margin:0;height:100%;height:100dvh;overflow:hidden;background:#0d0b09;touch-action:none;
     -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
     font-family:Rubik,-apple-system,"SF Pro Rounded","Segoe UI",Roboto,sans-serif;color:#1b1a18}
   canvas{display:block}
@@ -547,6 +547,16 @@
   #quests{margin-top:var(--sat);margin-left:var(--sal)} #msgs{margin-top:var(--sat)}
   .cb{margin-right:var(--sar);margin-bottom:var(--sab)} #joy{margin-left:var(--sal);margin-bottom:var(--sab)}
   .panel{padding-top:calc(10px + var(--sat));padding-bottom:calc(10px + var(--sab));box-sizing:border-box}
+
+  /* phones are played sideways: held upright, the game asks to be turned */
+  #rot{position:fixed;inset:0;z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:#0d0b09;color:#efe7da;text-align:center;padding:24px;box-sizing:border-box}
+  body.rot #rot{display:flex}
+  #rot .ph{width:74px;height:128px;border:5px solid #efe7da;border-radius:16px;position:relative;animation:rotPh 2.2s ease-in-out infinite}
+  #rot .ph::after{content:'';position:absolute;left:50%;bottom:7px;width:22px;height:4px;margin-left:-11px;border-radius:2px;background:#efe7da;opacity:.7}
+  #rot .ph::before{content:'🏀';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px}
+  @keyframes rotPh{0%,18%{transform:rotate(0)}52%,82%{transform:rotate(-90deg)}100%{transform:rotate(0)}}
+  #rot b{font-size:24px;font-weight:900;color:#ffd65a;line-height:1.15} #rot span{font-size:14px;opacity:.75;max-width:300px;line-height:1.4}
+  #rotSkip{margin-top:10px;background:none;border:0;font:inherit;font-size:12.5px;color:rgba(239,231,218,.45);text-decoration:underline;padding:10px}
 </style>
 </head>
 <body>
@@ -668,6 +678,7 @@
 </div></div>
 <div id="paper" class="ui"><img id="paperImg" alt="newspaper"><div id="pBtns"><button class="btn gold" id="pSave">💾 Save</button><button class="btn" id="pNext">Continue ▶</button></div><div id="pTip"></div></div>
 <div id="lamp"></div>
+<div id="rot"><div class="ph"></div><b>Поверни телефон боком</b><span>В игру играют горизонтально — так площадка на весь экран.<br>Не поворачивается? Выключи блокировку поворота в пункте управления.</span><button id="rotSkip">всё равно играть вертикально</button></div>
 <div id="title" class="ui">
   <div id="tLead"><b>3</b><b>2</b><b>1</b></div>
   <div id="tCard">
@@ -6523,12 +6534,15 @@ function perfWatch(dt){
   else perfBad=Math.max(0,perfBad-dt);
 }
 function fitScreen(){
-  const w=Math.max(1,window.innerWidth|0),h=Math.max(1,window.innerHeight|0); if(w===fitW&&h===fitH)return; fitW=w;fitH=h;
+  let de=0;try{de=document.documentElement.clientHeight|0;}catch(e){}
+  const w=Math.max(1,window.innerWidth|0),h=Math.max(1,window.innerHeight|0,de); if(w===fitW&&h===fitH)return; fitW=w;fitH=h;      // the taller of the two: an app launched from the home screen must not leave a strip at the bottom
   const big=Math.min(w,h)>=600;
+  try{const touch=(navigator.maxTouchPoints|0)>0||('ontouchstart' in window);document.body.classList.toggle('rot',touch&&!big&&h>w*1.05&&!window.__rotSkip);}catch(e){}
   renderer.setPixelRatio(Math.min(PR_CAP,window.devicePixelRatio||1)); renderer.setSize(w,h);
   persp.aspect=w/h; persp.fov=baseFov(); persp.updateProjectionMatrix(); if(cam===ortho)toOrtho();
   document.body.classList.toggle('big',big); JOY_R=big?70:48; lblCache='';
 }
+try{$('rotSkip').onclick=()=>{window.__rotSkip=1;document.body.classList.remove('rot');};}catch(e){}
 addEventListener('resize',()=>{fitW=0;fitScreen();}); addEventListener('orientationchange',()=>{fitW=0;setTimeout(fitScreen,60);setTimeout(()=>{fitW=0;fitScreen();},400);});
 // fullscreen (where the browser allows it)
 const fsEl=document.documentElement, fsOn=()=>!!(document.fullscreenElement||document.webkitFullscreenElement);
