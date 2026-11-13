@@ -587,6 +587,12 @@
   body #tut{bottom:auto!important;top:calc(58px + var(--sat));max-width:min(70vw,420px);background:rgba(20,18,16,.42);border:0;box-shadow:none;border-radius:12px;padding:5px 12px;font-size:13px;font-weight:700;line-height:1.25;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:.92}
   body #tut small{display:inline;margin:0 0 0 6px;font-size:11px;opacity:.6}
   body.big #tut{top:calc(84px + var(--sat));font-size:17px;max-width:520px;padding:7px 16px}body.big #tut small{font-size:13px}
+
+  /* the career is the heart of the game: one golden button that breathes with the beat; everything else stays calm */
+  body #menu #bCareer,body #menu #bCareer.pulse{background:linear-gradient(180deg,#ffd65a,#f08a24);color:#141210;border-color:transparent;font-weight:900;animation:carBeat var(--beat2,1.304s) ease-in-out infinite;will-change:transform}
+  @keyframes carBeat{0%,100%{transform:scale(1);box-shadow:0 5px 16px rgba(240,138,36,.22);filter:brightness(1)}50%{transform:scale(1.028);box-shadow:0 8px 34px rgba(255,205,90,.62);filter:brightness(1.09)}}
+  body #menu #bPlay{background:rgba(239,231,218,.07);color:#efe7da;border:1.5px solid rgba(239,231,218,.3);box-shadow:none;font-weight:700}
+  body #menu .btn.gold:not(#bCareer){background:rgba(239,231,218,.07);border-color:rgba(239,231,218,.3);color:#efe7da}
 </style>
 </head>
 <body>
@@ -4487,7 +4493,7 @@ function renderLocker(){
   {const nw=PROF.news||[];if(nw.length){h+='<span style="grid-column:1/3;font-weight:800;margin-top:6px">📰 Газеты</span>';for(let i=nw.length-1;i>=0;i--)h+='<button class="nwRow" data-news="'+i+'">'+esc(nw[i].hd)+'<br><small style="opacity:.6;font-weight:400">'+esc(nw[i].d)+' · '+nw[i].sc[0]+':'+nw[i].sc[1]+'</small></button>';}}
   $('lkRec').innerHTML=h;
 }
-function updateHello(){updateFtBtn();try{const b=$('bMe'),f=skFree();b.innerHTML='💪 Мой игрок'+(f?' <span class="meBadge">'+f+'</span>':'');b.classList.toggle('pulse',f>0);}catch(e){}try{const d=$('daily');if(d)d.textContent=dayText();}catch(e){}try{const sw=superOpen()&&!PROF.car.sup,gl=goldOn()&&(goldLeft()||goldSupPending());$('bCareer').textContent=sw?'🗿 Карьера: вызови Супербосса!':gl?'🌟 Карьера: Золотое лето':'🗺 Карьера: дорога в Большую лигу';$('bCareer').classList.toggle('pulse',sw||(PROF.intro===2&&carStars()===0));}catch(e){}const n=PROF.name;{const l=lvlOf(PROF.xp),fr=skFree();$('hello').textContent=(proTeam()?'✍️ '+proTeam().n+' · ':'')+(n?n+badgeE()+' · ':teamBy(PROF.team).n+' · ')+'ур. '+l+' '+rankOf(l)[1]+' · ★ '+carStars()+(PROF.st.streak>=2?' · 🔥 '+PROF.st.streak+' подряд':'')+(fr?' · ⬆ очки навыков: '+fr:'');}}
+function updateHello(){updateFtBtn();try{const b=SONGS.menu&&SONGS.menu.bpm;if(b)document.documentElement.style.setProperty('--beat2',(120/b).toFixed(3)+'s');}catch(e){}try{const b=$('bMe'),f=skFree();b.innerHTML='💪 Мой игрок'+(f?' <span class="meBadge">'+f+'</span>':'');b.classList.toggle('pulse',f>0);}catch(e){}try{const d=$('daily');if(d)d.textContent=dayText();}catch(e){}try{const sw=superOpen()&&!PROF.car.sup,gl=goldOn()&&(goldLeft()||goldSupPending());$('bCareer').textContent=sw?'🗿 Карьера: вызови Супербосса!':gl?'🌟 Карьера: Золотое лето':'🗺 Карьера: дорога в Большую лигу';$('bCareer').classList.toggle('pulse',sw||(PROF.intro===2&&carStars()===0));}catch(e){}const n=PROF.name;{const l=lvlOf(PROF.xp),fr=skFree();$('hello').textContent=(proTeam()?'✍️ '+proTeam().n+' · ':'')+(n?n+badgeE()+' · ':teamBy(PROF.team).n+' · ')+'ур. '+l+' '+rankOf(l)[1]+' · ★ '+carStars()+(PROF.st.streak>=2?' · 🔥 '+PROF.st.streak+' подряд':'')+(fr?' · ⬆ очки навыков: '+fr:'');}}
 function setCourt(id){if(id!=='auto'&&!COURTS[id])id='auto';PROF.court=id;courtStyle=id==='auto'?LOCS[locId||'bronx'].court:id;courtTexture();
   document.querySelectorAll('#segCourt button').forEach(x=>x.classList.toggle('sel',x.dataset.v===id));}
 document.querySelectorAll('#segCourt button').forEach(b=>b.onclick=()=>{audioInit();setCourt(b.dataset.v);saveProfile();});
