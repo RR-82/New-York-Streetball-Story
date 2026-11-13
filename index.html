@@ -582,6 +582,11 @@
     #mkBody .sw.tone i{width:20px;height:20px}#mkName{font-size:20px;padding:6px}#mkNumV{font-size:40px}#mkNumRow button{width:38px;height:38px;font-size:22px}
     #mkErr{min-height:0;margin:0}#mkBtns{margin-top:5px}#mkBtns .btn{padding:clamp(4px,1.8vh,9px);font-size:15px}
   }
+
+  /* hints: a quiet line under the scoreboard, never over the court */
+  body #tut{bottom:auto!important;top:calc(58px + var(--sat));max-width:min(70vw,420px);background:rgba(20,18,16,.42);border:0;box-shadow:none;border-radius:12px;padding:5px 12px;font-size:13px;font-weight:700;line-height:1.25;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:.92}
+  body #tut small{display:inline;margin:0 0 0 6px;font-size:11px;opacity:.6}
+  body.big #tut{top:calc(84px + var(--sat));font-size:17px;max-width:520px;padding:7px 16px}body.big #tut small{font-size:13px}
 </style>
 </head>
 <body>
@@ -3743,7 +3748,7 @@ function introSkip(){titleTap(true);}
 let INTRO_DF=null;
 function introStart(){
   audioInit();
-  INTRO_DF=Object.assign({},DIFFS.easy,{aiSpeed:0.7,steal:0,block:0,contest:0,dunkP:0.15,aiSd:3,zone:2.1,userBlock:1,bite:1,aiFake:0,aiAnkle:0,ankle:1.5,help:0});
+  INTRO_DF=Object.assign({},DIFFS.easy,{aiSpeed:0.84,steal:0.45,block:0.5,contest:0.55,dunkP:0.5,aiSd:2.3,zone:1.9,userBlock:1,bite:0.9,aiFake:0,aiAnkle:0,ankle:1.4,help:0});
   S.online=false; S.car=null; S.tourMatch=null; resetCommon(); S.practice=false; S.recorded=true; S.score=[0,0]; S.time=0; S.fmt=1; S.target=3;
   S.intro={step:-1,t:0,moved:false,shotT:0,tries:0}; pickOpp(); buildTeams(1); tutI=-1; S.quests=null; questRender(); nemSetup();
   introStep(0); snapFollow(); updateHud();
@@ -3773,7 +3778,8 @@ function introTick(dt){
   const I=S.intro; if(!I||S.mode!=='play3d'||S.replay||!user)return; I.t+=dt;
   const o=actors.find(a=>a.team===1);
   if(I.step===0&&o){o.stun=0.5;o.pos.set(6.2,0,9.2);}
-  if(I.step===1){if(o&&!(o.fallT>0))o.stun=Math.max(o.stun||0,0.2);        // he waits for the move
+  if(I.step===1){if(o&&!(o.fallT>0)&&I.t<1.6)o.stun=Math.max(o.stun||0,0.2);        // a moment to read the hint, then he guards for real
+    if(I.t>9&&!I.moved){I.step=3;introBubble(null);}                                     // no move after a while: the hint goes, the game is simply on
     if(user.move&&!I.moved){I.moved=true;const gen=S.gen;later(0.9,()=>{if(S.gen===gen&&S.intro&&S.intro.step===1&&S.ball.holder===user){S.intro.step=2;S.intro.t=0;introStep2Bubble();}});}}
   if(I.step===2){if(user.shootT>0)I.shotT=Math.max(I.shotT,0.01);if(I.shotT>0){I.shotT+=dt;if(I.shotT>3.2&&S.mode==='play3d')introStep(3);}
     if(S.ball.holder&&S.ball.holder!==user&&I.t>1)introStep(3);}
@@ -6562,7 +6568,8 @@ function perfWatch(dt){
 }
 function fitScreen(){
   let de=0;try{de=document.documentElement.clientHeight|0;}catch(e){}
-  const w=Math.max(1,window.innerWidth|0),h=Math.max(1,window.innerHeight|0,de); if(w===fitW&&h===fitH)return; fitW=w;fitH=h;      // the taller of the two: an app launched from the home screen must not leave a strip at the bottom
+  let sh=0;try{if(navigator.standalone===true&&window.screen){const a=screen.width|0,b=screen.height|0,full=window.innerWidth>window.innerHeight?Math.min(a,b):Math.max(a,b);if(full-(window.innerHeight|0)<90&&Math.abs((window.innerWidth>window.innerHeight?Math.max(a,b):Math.min(a,b))-window.innerWidth)<4)sh=full;}}catch(e){}
+  const w=Math.max(1,window.innerWidth|0),h=Math.max(1,window.innerHeight|0,de,sh); if(w===fitW&&h===fitH)return; fitW=w;fitH=h;      // the taller of the two: an app launched from the home screen must not leave a strip at the bottom
   const big=Math.min(w,h)>=600;
   try{const touch=(navigator.maxTouchPoints|0)>0||('ontouchstart' in window);document.body.classList.toggle('rot',touch&&!big&&h>w*1.05&&!window.__rotSkip);}catch(e){}
   renderer.setPixelRatio(Math.min(PR_CAP,window.devicePixelRatio||1)); renderer.setSize(w,h);
