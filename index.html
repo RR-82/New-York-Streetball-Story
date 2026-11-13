@@ -569,6 +569,7 @@
   <button class="btn alt" id="bMe">💪 Мой игрок</button>
   <button class="btn alt" id="bLocker">⚙️ Настройки</button>
   <p class="age"><b>5+</b> Для детей и взрослых · без насилия</p>
+  <p id="a2hs" style="display:none;margin:8px 0 0;padding:8px 10px;border:1.5px dashed rgba(255,214,90,.55);border-radius:12px;font-size:12.5px;line-height:1.35;color:#ffd65a">📲 <b>На весь экран, без рамок:</b> открой в Safari → «Поделиться» <span style="white-space:nowrap">(квадрат со стрелкой)</span> → <b>«На экран Домой»</b>. Запускай игру с иконки.</p>
 </div></div>
 
 <div id="locker" class="panel ui"><div class="card">
@@ -6527,6 +6528,8 @@ const fsEl=document.documentElement, fsOn=()=>!!(document.fullscreenElement||doc
 const fsCan=!!(fsEl&&(fsEl.requestFullscreen||fsEl.webkitRequestFullscreen)&&(document.fullscreenEnabled||document.webkitFullscreenEnabled));
 function toggleFs(){try{if(fsOn()){(document.exitFullscreen||document.webkitExitFullscreen).call(document);}
   else{const r=(fsEl.requestFullscreen||fsEl.webkitRequestFullscreen).call(fsEl);if(r&&r.catch)r.catch(()=>{});}}catch(e){}}
+try{const ua=navigator.userAgent||'',ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),alone=navigator.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||(window.matchMedia&&matchMedia('(display-mode: fullscreen)').matches);
+  if(ios&&!alone&&location.protocol==='https:'&&!/claude/.test(location.hostname)&&!/claudeusercontent/.test(location.hostname))$('a2hs').style.display='block';}catch(e){}      // an iPhone browser cannot go full screen on its own: show the one way that works
 if(fsCan){$('fsBtn').style.display='';$('fsBtn').onclick=toggleFs;$('bFs').style.display='block';$('bFs').onclick=toggleFs;}
 toMenu(); introBoot();
 requestAnimationFrame(loop);
