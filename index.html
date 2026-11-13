@@ -6050,7 +6050,9 @@ $('tourPlay').onclick=tourPlay;
 $('tourNew').onclick=()=>{audioInit();tourNew();renderTour();};
 $('tourBack').onclick=()=>{$('tour').classList.remove('show');openCareer();};
 $('bFT').onclick=()=>{audioInit();startPractice();};
-$('oAgain').onclick=()=>{audioInit();if(S.car&&!S.online){toMenu();openCareer();return;}if(S.tourMatch&&!S.online){toMenu();openTour();return;}if(S.online&&S.net){if(S.net.role==='host')restartOnline();else{netAction({k:'rematch'});say('Waiting for your friend…','small');}return;}S.practice?startPractice():startGame();};
+$('oAgain').onclick=()=>{audioInit();if(S.car&&!S.online){const was=S.car,won=S.score&&S.score[0]>S.score[1];toMenu();openCareer();
+    try{if(MAP.on&&!was.sup&&!was.duel){const c=mapCurrent(),i=won?c.i:CAR.findIndex(d=>d.id===was.id),m=won?c.m:(was.m|0),n=MAP.nodes[i*4+m];      // straight to the next court (or back to the one you lost on) with its card open: one tap and you play
+      if(n&&carNodeOpen(i,m)&&(!won||!((PROF.car.w[CAR[i].id]||[])[m]>0)))mapSelect(n);}}catch(e){}return;}if(S.tourMatch&&!S.online){toMenu();openTour();return;}if(S.online&&S.net){if(S.net.role==='host')restartOnline();else{netAction({k:'rematch'});say('Waiting for your friend…','small');}return;}S.practice?startPractice():startGame();};
 $('oMenu').onclick=toMenu; $('oUp').onclick=()=>{toMenu();openMe();}; $('bMe').onclick=openMe; $('meDone').onclick=()=>{$('me').classList.remove('show');$('menu').classList.add('show');updateHello();updateOnlineUI();};
 $('meBody').onclick=e=>{const k=e.target&&e.target.closest&&e.target.closest('[data-sk]');if(k)skAdd(k.dataset.sk);}; if(0)0;
 $('menuBtn').onclick=()=>{toMenu();};
